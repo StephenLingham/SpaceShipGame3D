@@ -1,22 +1,21 @@
 #ifndef BOUNDINGBOX_H
 #define BOUNDINGBOX_H
 
-//#define NOMINMAX 
-//#include <cml/cml.h>
-
 namespace SpaceShip
 {
 	class BoundingBox
 	{
+	private:
+		cml::vector3f maxPos;
+		cml::vector3f minPos;
 	public:
 		cml::vector3f position;
 		float width;
 		float height;
-		float depth;
-		cml::vector3f maxPos;
-		cml::vector3f minPos;
+		float depth;		
 		std::vector<cml::vector3f> corners;
-		//cml::vector3f corners[8];
+		float maxOuterBoundary;
+
 		
 		BoundingBox()
 		{
@@ -42,6 +41,10 @@ namespace SpaceShip
 		void SetCorners();//cml::vector3f position, float width, float height, float depth);
 
 		bool Intersects(BoundingBox otherBox);
+
+		cml::vector3f GetMinPosition();
+
+		cml::vector3f GetMaxPosition();
 
 	};
 

@@ -1,4 +1,5 @@
 #define NOMINMAX 
+#include "Main.h"
 #include <cml/cml.h>
 #include <SFML/Window.hpp>
 #include <SFML/Graphics.hpp>
@@ -18,7 +19,8 @@ void Initialize();
 static std::string toString(float value); 
 void MouseMovement();
 void ProcessKeyboard();
-void ProcessMouse();
+void ProcessMouse(sf::Event Event);
+void UpdateProjectiles();
 
 
 sf::RenderWindow window(sf::VideoMode(800, 600, 32), "Space Ship Demo", sf::Style::Fullscreen);
@@ -34,14 +36,9 @@ SpaceShip::Player player(cml::vector3f(0,0,100));
 std::vector<SpaceShip::Enemy> enemies;
 
 
-//SpaceShip::Enemy enemy1(cml::vector3f(200,0,-200), cml::vector3f(0.3f, 1.f, 0.3f), SpaceShip::BoundingBox(cml::vector3f(200,0,-200), 100, 100, 100));//cml::vector3f(50,50,50), cml::vector3f(-50,-50,-50)));
-//SpaceShip::Enemy enemy2(cml::vector3f(-200,0,-200), cml::vector3f(0.3f, 1.f, 0.3f), SpaceShip::BoundingBox(cml::vector3f(-200,0,-200), 100, 100, 100));//cml::vector3f(50,50,50), cml::vector3f(-50,-50,-50)));
-
 bool initMousePos = false;
 std::vector<SpaceShip::Projectile> projectiles;
 
-//sf::Input currentInput = window.GetInput();
-//sf::Input lastInput = window.GetInput();
 
 int main()
 {   	
@@ -60,7 +57,7 @@ int main()
 	    
     while (window.IsOpened())
     {
-		if (updateClock.GetElapsedTime() > 1/20) //update 20 times a second, set time to avoid players moving at different speeds on different computers
+		if (updateClock.GetElapsedTime() > 1.f/60.f) //update a set number of times per second, set time to avoid players moving at different speeds on different computers
 		{
 			Update();       
 			updateClock.Reset();
@@ -73,54 +70,46 @@ int main()
 }
 
 void Update()
-{	
-	// Process events
+{		
 	sf::Event Event;
 	while (window.GetEvent(Event))
-	{
-		// Close window : exit
+	{		
 		if (Event.Type == sf::Event::Closed)
 			window.Close();
-
-		// Resize event : adjust viewport
+		
 		if (Event.Type == sf::Event::Resized)
 			glViewport(0, 0, Event.Size.Width, Event.Size.Height);
-
 
 		if (Event.Type == sf::Event::MouseMoved)
 		{
 			player.mouseX = Event.MouseMove.X;
-			player.mouseY = Event.MouseMove.Y;
-			
+			player.mouseY = Event.MouseMove.Y;			
 		}
 
-		if (Event.Type == sf::Event::MouseButtonPressed && Event.MouseButton.Button == sf::Mouse::Left)
-			projectiles.push_back(SpaceShip::Projectile(player.position, cml::vector3f(1.f,1.f,1.f), SpaceShip::BoundingBox(player.position, 25,25,25), cml::vector3f(0.f, 0.f, -5.f)));
-	
+		//stores the players mouse pos initially, otherwise it takes it as (0,0) 
+		//and calculates that the player makes a big spin at the start of the game
+		//making him upside down
+		if (!initMousePos)
+		{
+			const sf::Input& input = window.GetInput();
 
-	}
-	//currentInput = window.GetInput();
+			player.lastMouseX = input.GetMouseX();
+			player.lastMouseY = input.GetMouseY();
+
+			initMousePos = true;
+		}
+		
+		ProcessMouse(Event);
+
+	}	
 
 	ProcessKeyboard();
 	
-	//enemy1.cubeRotX = Clock.GetElapsedTime() * 50;
-	//enemy1.cubeRotY = Clock.GetElapsedTime() * 30;
-	//enemy1.cubeRotZ = Clock.GetElapsedTime() * 90;
+	UpdateProjectiles();	
+}
 
-	if (!initMousePos)
-	{
-		const sf::Input& input = window.GetInput();
-
-		player.lastMouseX = input.GetMouseX();
-		player.lastMouseY = input.GetMouseY();
-
-		initMousePos = true;
-	}
-	
-	
-	ProcessMouse();
-	//MouseMovement();
-	
+void UpdateProjectiles()
+{
 	for(int i = 0; i < projectiles.size(); i++)
 	{
 		projectiles[i].SetPosition(projectiles[i].GetPosition() + projectiles[i].velocity);
@@ -134,18 +123,14 @@ void Update()
 				k = enemies.size();
 			}
 			else for(int j = 0; j < 3; j++)
-				if(projectiles[i].GetPosition()[j] > 2000 || projectiles[i].GetPosition()[j] < -2000)
+				if(projectiles[i].GetPosition()[j] > 1000 || projectiles[i].GetPosition()[j] < -1000)
 				{
 					projectiles.erase(projectiles.begin() + i);
 					k = enemies.size();
+					j = 3;
 				}
-		}
-		
+		}		
 	}
-	
-
-	//lastInput = currentInput;
-
 }
 
 void ProcessKeyboard()
@@ -154,6 +139,7 @@ void ProcessKeyboard()
 	if (input.IsKeyDown(sf::Key::Escape))
 		window.Close();
 	
+	float speed = 6.f;
 	
 	//key press events
 	// Escape key : exit
@@ -166,9 +152,9 @@ void ProcessKeyboard()
 		float xrotrad, yrotrad;
 		yrotrad = (player.rotY / 180 * 3.141592654f);
 		xrotrad = (player.rotX / 180 * 3.141592654f); 
-		player.position[0] += float(sin(yrotrad)) ;
-		player.position[2] -= float(cos(yrotrad)) ;
-		player.position[1] -= float(sin(xrotrad)) ;
+		player.position[0] += float(sin(yrotrad)) * speed ;
+		player.position[2] -= float(cos(yrotrad)) * speed;
+		player.position[1] -= float(sin(xrotrad)) * speed;
 	}
 
 	if (input.IsKeyDown(sf::Key::S))
@@ -176,25 +162,25 @@ void ProcessKeyboard()
 		float xrotrad, yrotrad;
 		yrotrad = (player.rotY / 180 * 3.141592654f);
 		xrotrad = (player.rotX / 180 * 3.141592654f); 
-		player.position[0] -= float(sin(yrotrad));
-		player.position[2] += float(cos(yrotrad)) ;
-		player.position[1] += float(sin(xrotrad));
+		player.position[0] -= float(sin(yrotrad)) * speed;
+		player.position[2] += float(cos(yrotrad)) * speed;
+		player.position[1] += float(sin(xrotrad)) * speed;
 	}
 
 	if (input.IsKeyDown(sf::Key::D))
 	{
 		float yrotrad;
 		yrotrad = (player.rotY / 180 * 3.141592654f);
-		player.position[0] += float(cos(yrotrad));// * 0.2f;
-		player.position[2] += float(sin(yrotrad));// * 0.2f;
+		player.position[0] += float(cos(yrotrad)) * speed;// * 0.2f;
+		player.position[2] += float(sin(yrotrad)) * speed;// * 0.2f;
 	}
 
 	if (input.IsKeyDown(sf::Key::A))
 	{
 		float yrotrad;
 		yrotrad = (player.rotY / 180 * 3.141592654f);
-		player.position[0] -= float(cos(yrotrad));// * 0.2f;
-		player.position[2] -= float(sin(yrotrad));// * 0.2f;
+		player.position[0] -= float(cos(yrotrad)) * speed;// * 0.2f;
+		player.position[2] -= float(sin(yrotrad)) * speed;// * 0.2f;
 	}
 
 }
@@ -397,14 +383,24 @@ void DrawCube2(float size, cml::vector3f colour)
 void Initialize()
 {
 	window.EnableKeyRepeat(false);
-
+	window.UseVerticalSync(true);
+	
 	enemies.push_back(SpaceShip::Enemy(cml::vector3f(200,0,-200), cml::vector3f(0.3f, 1.f, 0.3f), SpaceShip::BoundingBox(cml::vector3f(200,0,-200), 100, 100, 100)));//cml::vector3f(50,50,50), cml::vector3f(-50,-50,-50)));
 	enemies.push_back(SpaceShip::Enemy(cml::vector3f(-200,0,-200), cml::vector3f(0.3f, 1.f, 0.3f), SpaceShip::BoundingBox(cml::vector3f(-200,0,-200), 100, 100, 100)));//cml::vector3f(50,50,50), cml::vector3f(-50,-50,-50)));
+/*
+	if (!initMousePos)
+	{
+		const sf::Input& input = window.GetInput();
 
+		player.lastMouseX = input.GetMouseX();
+		player.lastMouseY = input.GetMouseY();
+
+		initMousePos = true;
+	}*/
 
 	// Set color and depth clear value
     glClearDepth(1.f);
-    glClearColor(0.1f, 0.5f, 0.5f, 0.f);
+    glClearColor(0.3f, 0.7f, 0.7f, 0.f);
 
     // Enable Z-buffer read and write
     glEnable(GL_DEPTH_TEST);
@@ -430,13 +426,36 @@ static std::string toString(float value)
 	return stream.str(); 
 } 
 
-void ProcessMouse()
+void ProcessMouse(sf::Event Event)
 {
-	//const sf::Input& input = window.GetInput();
+	if (Event.Type == sf::Event::MouseButtonPressed && Event.MouseButton.Button == sf::Mouse::Left)
+		{
+			cml::vector3f initialVector = cml::vector3f(0,0,-5); //initial vector to transform, projectiles have speed of 5
+		
+			//convert player's rotation to radians and create rotation matrices
+			cml::matrix44f_r xrotMatrix;
+			cml::matrix_rotation_world_x(xrotMatrix, cml::rad(-player.rotX)); 
 
-	//if (currentInput.IsMouseButtonDown(sf::Mouse::Left))
-	//	projectiles.push_back(SpaceShip::Projectile(player.position, cml::vector3f(1.f,1.f,1.f), SpaceShip::BoundingBox(player.position, 25,25,25), cml::vector3f(0.f, 0.f, -5.f)));
-	
+			cml::matrix44f_r yrotMatrix;
+			cml::matrix_rotation_world_y(yrotMatrix, cml::rad(-player.rotY));
+
+			cml::matrix44f_r zrotMatrix;
+			cml::matrix_rotation_world_z(zrotMatrix, cml::rad(-player.rotZ));
+
+			//multiply the three matrices together into one final matrix
+			cml::matrix44f_r finalMatrix(cml::operator *(cml::operator *(xrotMatrix, yrotMatrix), zrotMatrix));
+				
+				//xrotMatrix cml::operator * yrotMatrix cml::operator * zrotMatrix;
+			//cml::operator * 
+
+			//apply the matrix rotation information to the vector to make it face in the right direction
+			initialVector = cml::transform_vector(finalMatrix, initialVector);
+						
+			//add projectile with the velocity in initialVector
+			projectiles.push_back(SpaceShip::Projectile(player.position, cml::vector3f(1.f,1.f,1.f), SpaceShip::BoundingBox(player.position, 25,25,25), initialVector));
+			
+		}
+
 	MouseMovement();
 }
 

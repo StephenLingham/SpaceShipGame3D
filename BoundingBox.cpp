@@ -1,142 +1,86 @@
-/*#define NOMINMAX 
-#include <cml/cml.h>
-
-namespace SpaceShip
-{
-	class BoundingBox
-	{
-		public:
-		cml::vector3f maxPos;
-		cml::vector3f minPos;
-		cml::vector3f corners[8];
-
-		BoundingBox()
-		{
-		}
-		
-		BoundingBox(cml::vector3f maxPos, cml::vector3f minPos)
-		{
-			this->maxPos = maxPos;
-			this->minPos = minPos;
-
-			corners[0] = cml::vector3f(minPos[0], maxPos[1], maxPos[2]); //left,top,back
-			corners[1] = cml::vector3f(maxPos[0], maxPos[1], maxPos[2]); //right,top,back
-			corners[2] = cml::vector3f(minPos[0], maxPos[1], minPos[2]); //left, top, front
-			corners[3] = cml::vector3f(maxPos[0], maxPos[1], minPos[2]); //right, top, front
-			corners[4] = cml::vector3f(minPos[0], minPos[1], maxPos[2]); //left, bottom, back
-			corners[5] = cml::vector3f(maxPos[0], minPos[1], maxPos[2]); //right, bottom, back
-			corners[6] = cml::vector3f(minPos[0], minPos[1], minPos[2]); //left, bottom, front
-			corners[7] = cml::vector3f(maxPos[0], minPos[1], minPos[2]); // right, bottom, front
-			
-		}
-
-		bool intersects(BoundingBox otherBox)
-		{
-			bool hasCollided = false;
-
-			for (int i = 0; i < sizeof(corners); i++)
-			{
-				if (corners[i][0] <= otherBox.maxPos[0] && corners[i][0] >= otherBox.minPos[0])
-					hasCollided = true;
-
-				if (corners[i][1] <= otherBox.maxPos[1] && corners[i][1] >= otherBox.minPos[1])
-					hasCollided = true;
-
-				if (corners[i][2] <= otherBox.maxPos[2] && corners[i][2] >= otherBox.minPos[2])
-					hasCollided = true;
-				  
-			}
-
-			return hasCollided;
-		}
-
-	};
-
-}
-*/
-
 #define NOMINMAX 
 #include <cml/cml.h>
 #include "BoundingBox.h"
-
+#include <math.h>
 
 namespace SpaceShip
 {
-	//class BoundingBox
-	//{
-		BoundingBox::BoundingBox(cml::vector3f position, float width, float height, float depth)
+
+	BoundingBox::BoundingBox(cml::vector3f position, float width, float height, float depth)
+	{
+		this->position = position;
+		this->width = width;
+		this->height = height;
+		this->depth = depth;
+
+		if (width > height && width > depth)
+			maxOuterBoundary = width * 1.5f;
+		else if (height > depth)
+			maxOuterBoundary = height * 1.5f;
+		else 
+			maxOuterBoundary = depth * 1.5f;
+
+	}
+	
+
+	void BoundingBox::SetCorners()
+	{
+		corners.clear();
+
+		corners.push_back(cml::vector3f(position[0] - width/2, position[1] + height/2, position[2] + depth/2)); //left,top,back
+		corners.push_back(cml::vector3f(position[0] + width/2, position[1] + height/2, position[2] + depth/2)); //right,top,back
+		corners.push_back(cml::vector3f(position[0] - width/2, position[1] + height/2, position[2] - depth/2)); //left,top,front
+		corners.push_back(cml::vector3f(position[0] + width/2, position[1] + height/2, position[2] - depth/2)); //right,top,front
+		corners.push_back(cml::vector3f(position[0] - width/2, position[1] - height/2, position[2] + depth/2)); //left,bottom,back
+		corners.push_back(cml::vector3f(position[0] + width/2, position[1] - height/2, position[2] + depth/2)); //right,bottom,back
+		corners.push_back(cml::vector3f(position[0] - width/2, position[1] - height/2, position[2] - depth/2)); //left,bottom,front
+		corners.push_back(cml::vector3f(position[0] + width/2, position[1] - height/2, position[2] - depth/2)); //right,bottom,front
+
+	}
+
+	bool BoundingBox::Intersects(BoundingBox otherBox)
+	{
+		bool hasCollided = false;			
+
+		float distance = sqrt (pow(position[0] - otherBox.position[0], 2) + pow(position[1] - otherBox.position[1], 2) + pow(position[2] - otherBox.position[2], 2));//distance between two boxes positions
+
+		//only do more accurate detection if boxes are near enough to each other
+		if (distance < maxOuterBoundary + otherBox.maxOuterBoundary)
 		{
-			this->position = position;
-			this->width = width;
-			this->height = height;
-			this->depth = depth;
+			SetCorners();
 
-			SetCorners();//position, width, height, depth);
-			
-		}
-		/*
-		BoundingBox::BoundingBox(cml::vector3f maxPos, cml::vector3f minPos)
-		{
-			this->maxPos = maxPos;
-			this->minPos = minPos;
-
-			corners[0] = cml::vector3f(minPos[0], maxPos[1], maxPos[2]); //left,top,back
-			corners[1] = cml::vector3f(maxPos[0], maxPos[1], maxPos[2]); //right,top,back
-			corners[2] = cml::vector3f(minPos[0], maxPos[1], minPos[2]); //left, top, front
-			corners[3] = cml::vector3f(maxPos[0], maxPos[1], minPos[2]); //right, top, front
-			corners[4] = cml::vector3f(minPos[0], minPos[1], maxPos[2]); //left, bottom, back
-			corners[5] = cml::vector3f(maxPos[0], minPos[1], maxPos[2]); //right, bottom, back
-			corners[6] = cml::vector3f(minPos[0], minPos[1], minPos[2]); //left, bottom, front
-			corners[7] = cml::vector3f(maxPos[0], minPos[1], minPos[2]); // right, bottom, front
-			
-		}*/
-
-		void BoundingBox::SetCorners()//cml::vector3f position, float width, float height, float depth)
-		{/*
-			corners[0] = cml::vector3f(position[0] - width/2, position[1] + height/2, position[2] + depth/2); //left,top,back
-			corners[1] = cml::vector3f(position[0] + width/2, position[1] + height/2, position[2] + depth/2); //right,top,back
-			corners[2] = cml::vector3f(position[0] - width/2, position[1] + height/2, position[2] - depth/2); //left,top,front
-			corners[3] = cml::vector3f(position[0] + width/2, position[1] + height/2, position[2] - depth/2); //right,top,front
-			corners[4] = cml::vector3f(position[0] - width/2, position[1] - height/2, position[2] + depth/2); //left,bottom,back
-			corners[5] = cml::vector3f(position[0] + width/2, position[1] - height/2, position[2] + depth/2); //right,bottom,back
-			corners[6] = cml::vector3f(position[0] - width/2, position[1] - height/2, position[2] - depth/2); //left,bottom,front
-			corners[7] = cml::vector3f(position[0] + width/2, position[1] - height/2, position[2] - depth/2); //right,bottom,front
-			*/
-			corners.push_back(cml::vector3f(position[0] - width/2, position[1] + height/2, position[2] + depth/2)); //left,top,back
-			corners.push_back(cml::vector3f(position[0] + width/2, position[1] + height/2, position[2] + depth/2)); //right,top,back
-			corners.push_back(cml::vector3f(position[0] - width/2, position[1] + height/2, position[2] - depth/2)); //left,top,front
-			corners.push_back(cml::vector3f(position[0] + width/2, position[1] + height/2, position[2] - depth/2)); //right,top,front
-			corners.push_back(cml::vector3f(position[0] - width/2, position[1] - height/2, position[2] + depth/2)); //left,bottom,back
-			corners.push_back(cml::vector3f(position[0] + width/2, position[1] - height/2, position[2] + depth/2)); //right,bottom,back
-			corners.push_back(cml::vector3f(position[0] - width/2, position[1] - height/2, position[2] - depth/2)); //left,bottom,front
-			corners.push_back(cml::vector3f(position[0] + width/2, position[1] - height/2, position[2] - depth/2)); //right,bottom,front
-			
-
-			minPos = cml::vector3f(position[0] - width/2, position[1] - height/2, position[2] - depth/2); 
-			maxPos = cml::vector3f(position[0] + width/2, position[1] + height/2, position[2] + depth/2); 
-			
-		}
-		
-		bool BoundingBox::Intersects(BoundingBox otherBox)
-		{
-			bool hasCollided = false;
+			cml::vector3f minPosOtherBox = otherBox.GetMinPosition();
+			cml::vector3f maxPosOtherBox = otherBox.GetMaxPosition();
 
 			for (int i = 0; i < corners.size(); i++)
 			{
-				if (corners[i][0] <= otherBox.maxPos[0] && 
-					corners[i][0] >= otherBox.minPos[0] &&
-					corners[i][1] <= otherBox.maxPos[1] && 
-					corners[i][1] >= otherBox.minPos[1] &&
-					corners[i][2] <= otherBox.maxPos[2] && 
-					corners[i][2] >= otherBox.minPos[2])
-						hasCollided = true;
-								  
-			}
+				if (corners[i][0] <= maxPosOtherBox[0] && 
+					corners[i][0] >= minPosOtherBox[0] &&
+					corners[i][1] <= maxPosOtherBox[1] && 
+					corners[i][1] >= minPosOtherBox[1] &&
+					corners[i][2] <= maxPosOtherBox[2] && 
+					corners[i][2] >= minPosOtherBox[2])
+				{
+					hasCollided = true;
+					break;
+				}
 
-			return hasCollided;
+
+			}
 		}
 
-	//};
+		return hasCollided;
+	}
+
+	cml::vector3f BoundingBox::GetMinPosition()
+	{
+		return cml::vector3f(position[0] - width/2, position[1] - height/2, position[2] - depth/2);
+	}
+
+	cml::vector3f BoundingBox::GetMaxPosition()
+	{
+		return cml::vector3f(position[0] + width/2, position[1] + height/2, position[2] + depth/2);		
+	}
 
 }
 
