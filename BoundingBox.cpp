@@ -52,7 +52,7 @@ namespace SpaceShip
 			cml::vector3f minPosOtherBox = otherBox.GetMinPosition();
 			cml::vector3f maxPosOtherBox = otherBox.GetMaxPosition();
 
-			for (int i = 0; i < corners.size(); i++)
+			for (std::vector<cml::vector3f>::size_type i = 0; i < corners.size(); i++)
 			{
 				if (corners[i][0] <= maxPosOtherBox[0] && 
 					corners[i][0] >= minPosOtherBox[0] &&

@@ -1,5 +1,4 @@
 #define NOMINMAX 
-#include "Main.h"
 #include <cml/cml.h>
 #include <SFML/Window.hpp>
 #include <SFML/Graphics.hpp>
@@ -16,7 +15,9 @@ void DrawCube(float size);
 void DrawCube2(float size, cml::vector3f colour);
 void DrawFace(float size);
 void Initialize();
+#if 0 
 static std::string toString(float value); 
+#endif
 void MouseMovement();
 void ProcessKeyboard();
 void ProcessMouse(sf::Event Event);
@@ -37,8 +38,10 @@ std::vector<SpaceShip::Enemy> enemies;
 
 
 bool initMousePos = false;
-std::vector<SpaceShip::Projectile> projectiles;
 
+typedef std::vector<SpaceShip::Projectile> ProjectileVector;
+
+ProjectileVector projectiles;
 
 int main()
 {   	
@@ -110,11 +113,11 @@ void Update()
 
 void UpdateProjectiles()
 {
-	for(int i = 0; i < projectiles.size(); i++)
+	for(ProjectileVector::size_type i = 0; i < projectiles.size(); i++)
 	{
 		projectiles[i].SetPosition(projectiles[i].GetPosition() + projectiles[i].velocity);
 		
-		for (int k = 0; k < enemies.size(); k++)
+		for (ProjectileVector::size_type k = 0; k < enemies.size(); k++)
 		{
 			if (projectiles[i].boundingBox.Intersects(enemies[k].boundingBox))
 			{
@@ -122,7 +125,7 @@ void UpdateProjectiles()
 				projectiles.erase(projectiles.begin() + i);
 				k = enemies.size();
 			}
-			else for(int j = 0; j < 3; j++)
+			else for(unsigned int j = 0; j < 3; j++)
 				if(projectiles[i].GetPosition()[j] > 1000 || projectiles[i].GetPosition()[j] < -1000)
 				{
 					projectiles.erase(projectiles.begin() + i);
@@ -226,8 +229,8 @@ void Draw()
 	glRotatef(enemies[1].cubeRotZ, 0.f, 0.f, 1.f);
 	DrawCube2(1.f, enemies[1].colour);
 	glPopMatrix();
-
-	for(int i = 0; i < projectiles.size(); i++)
+    
+	for(ProjectileVector::size_type i = 0; i < projectiles.size(); i++)
 	{	
 		glPushMatrix();
 		glTranslatef(projectiles[i].GetPosition()[0], projectiles[i].GetPosition()[1], projectiles[i].GetPosition()[2]);
@@ -419,12 +422,14 @@ void Initialize()
 	
 }
 
+#if 0
 static std::string toString(float value) 
 { 
 	std::ostringstream stream; 
 	stream << value; 
 	return stream.str(); 
 } 
+#endif
 
 void ProcessMouse(sf::Event Event)
 {
